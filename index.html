@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HelpNearby</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #10b981;
+            --primary-dark: #059669;
+            --primary-light: #d1fae5;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: white;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --shadow: rgba(0, 0, 0, 0.1);
+            --shadow-lg: rgba(0, 0, 0, 0.15);
+        }
+
+        .dark {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --card-bg: #1f2937;
+            --text: #f9fafb;
+            --text-light: #9ca3af;
+            --border: #374151;
+            --shadow: rgba(0, 0, 0, 0.3);
+            --shadow-lg: rgba(0, 0, 0, 0.5);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            animation: fadeDown 0.6s ease;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            font-size: 36px;
+            animation: bounce 2s infinite;
+        }
+
+        .logo h1 {
+            font-size: 28px;
+            font-weight: 700;
+            color: white;
+            text-shadow: 2px 2px 8px var(--shadow-lg);
+        }
+
+        .theme-toggle {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.1) rotate(15deg);
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Input Card */
+        .input-card {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 20px 60px var(--shadow-lg);
+            animation: fadeUp 0.6s ease;
+            transition: all 0.3s ease;
+        }
+
+        .input-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 70px var(--shadow-lg);
+        }
+
+        .card-header {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+
+        .card-header h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .card-header p {
+            color: var(--text-light);
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--text-light);
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            background: var(--card-bg);
+            color: var(--text);
+            transition: all 0.3s ease;
+        }
+
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-light);
+        }
+
+        textarea {
+            resize: none;
+            height: 100px;
+            line-height: 1.5;
+        }
+
+        .char-count {
+            text-align: right;
+            font-size: 12px;
+            color: var(--text-light);
+            margin-top: 5px;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        /* Filter */
+        .filter-section {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 15px 20px;
+            margin-bottom: 25px;
+            animation: fadeUp 0.7s ease;
+        }
+
+        .filter-section select {
+            background: var(--card-bg);
+            border: none;
+            box-shadow: 0 4px 10px var(--shadow);
+        }
+
+        /* Feed */
+        .feed-header {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px var(--shadow);
+        }
+
+        .help-card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 16px;
+            box-shadow: 0 10px 30px var(--shadow);
+            transition: all 0.3s ease;
+            animation: slideIn 0.5s ease;
+            border-left: 4px solid var(--primary);
+        }
+
+        .help-card:hover {
+            transform: translateX(5px);
+            box-shadow: 0 15px 40px var(--shadow-lg);
+        }
+
+        .help-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .help-type {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--primary);
+        }
+
+        .help-location {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 12px;
+        }
+
+        .help-message {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 16px;
+            color: var(--text);
+        }
+
+        .help-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+        }
+
+        .help-count {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-light);
+        }
+
+        .help-count span {
+            font-size: 20px;
+        }
+
+        .btn-help {
+            padding: 10px 20px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-help:hover {
+            background: var(--primary-dark);
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+            animation: fadeUp 0.6s ease;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.7;
+        }
+
+        .empty-state h3 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px var(--shadow);
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Animations */
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% {
+                transform: translateY(0);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .input-card {
+                padding: 20px;
+            }
+            
+            .logo h1 {
+                font-size: 22px;
+            }
+            
+            .help-card {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <span class="logo-icon">🌱</span>
+                <h1>HelpNearby</h1>
+            </div>
+            <button class="theme-toggle" onclick="toggleDark()">🌙</button>
+        </div>
+
+        <!-- Input Card -->
+        <div class="input-card">
+            <div class="card-header">
+                <h2>Need Help? 🤝</h2>
+                <p>Post your request and connect with helpful people nearby</p>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Category</label>
+                <select id="type">
+                    <option>📚 Notes / Study</option>
+                    <option>🧭 Guidance</option>
+                    <option>🚌 Travel / Local</option>
+                    <option>💻 Tech Help</option>
+                    <option>🤝 Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Location</label>
+                <input id="location" placeholder="e.g., Campus Library, Hostel Block A" />
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">What help do you need?</label>
+                <textarea id="message" placeholder="Describe your request clearly..." maxlength="200" oninput="updateCharCount()"></textarea>
+                <div class="char-count"><span id="charCount">0</span>/200</div>
+            </div>
+
+            <button class="btn-primary" onclick="postHelp()">📤 Post Request</button>
+        </div>
+
+        <!-- Filter -->
+        <div class="filter-section">
+            <select id="filterType" onchange="applyFilter()">
+                <option value="All">🔍 All Categories</option>
+                <option>📚 Notes / Study</option>
+                <option>🧭 Guidance</option>
+                <option>🚌 Travel / Local</option>
+                <option>💻 Tech Help</option>
+                <option>🤝 Other</option>
+            </select>
+        </div>
+
+        <!-- Feed -->
+        <h3 class="feed-header">🌟 Recent Requests</h3>
+        <div id="feed"></div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyACJc82OOTxsWAQacO38FJRsirYa8CDPAg",
+            authDomain: "focus-timer-2b7be.firebaseapp.com",
+            projectId: "focus-timer-2b7be",
+            storageBucket: "focus-timer-2b7be.firebasestorage.app",
+            messagingSenderId: "554981709636",
+            appId: "1:554981709636:web:b8b0e994c9fb8b98ab6911",
+            measurementId: "G-9FPWLP4XHF"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let currentFilter = "All";
+        const feed = document.getElementById("feed");
+
+        // Dark Mode
+        function toggleDark() {
+            document.body.classList.toggle("dark");
+            const btn = document.querySelector('.theme-toggle');
+            btn.textContent = document.body.classList.contains('dark') ? '☀️' : '🌙';
+        }
+
+        // Character Count
+        function updateCharCount() {
+            const count = document.getElementById('message').value.length;
+            document.getElementById('charCount').textContent = count;
+        }
+
+        // Load data
+        db.collection("helps")
+          .orderBy("time", "desc")
+          .onSnapshot(snapshot => {
+              feed.innerHTML = "";
+              
+              const docs = [];
+              snapshot.forEach(doc => {
+                  const d = doc.data();
+                  if (currentFilter !== "All" && d.type !== currentFilter) return;
+                  docs.push({id: doc.id, data: d});
+              });
+
+              if (docs.length === 0) {
+                  feed.innerHTML = `
+                      <div class="empty-state">
+                          <div class="empty-state-icon">🔍</div>
+                          <h3>No requests yet</h3>
+                          <p>Be the first to post a help request!</p>
+                      </div>
+                  `;
+                  return;
+              }
+
+              docs.forEach(({id, data: d}) => {
+                  const div = document.createElement("div");
+                  div.className = "help-card";
+                  div.innerHTML = `
+                      <div class="help-header">
+                          <div class="help-type">${d.type}</div>
+                      </div>
+                      <div class="help-location">
+                          <span>📍</span>
+                          <span>${d.location}</span>
+                      </div>
+                      <div class="help-message">${d.text}</div>
+                      <div class="help-footer">
+                          <div class="help-count">
+                              <span>❤️</span>
+                              <span>${d.helpers || 0} helpers</span>
+                          </div>
+                          <button class="btn-help" onclick="help('${id}', ${d.helpers || 0})">I can help!</button>
+                      </div>
+                  `;
+                  feed.appendChild(div);
+              });
+          });
+
+        function applyFilter() {
+            currentFilter = document.getElementById("filterType").value;
+        }
+
+        function postHelp() {
+            const text = document.getElementById('message').value.trim();
+            const type = document.getElementById("type").value;
+            const location = document.getElementById("location").value.trim() || "Not specified";
+
+            if (text.length === 0) {
+                alert("⚠️ Please describe what help you need!");
+                return;
+            }
+
+            if (text.length > 200) {
+                alert("⚠️ Message must be 200 characters or less!");
+                return;
+            }
+
+            db.collection("helps").add({
+                text,
+                type,
+                location,
+                helpers: 0,
+                time: firebase.firestore.FieldValue.serverTimestamp()
+            }).then(() => {
+                document.getElementById('message').value = "";
+                document.getElementById('location').value = "";
+                updateCharCount();
+                alert("✅ Your request has been posted!");
+            }).catch(err => {
+                alert("❌ Error posting request. Please try again.");
+                console.error(err);
+            });
+        }
+
+        function help(id, count) {
+            db.collection("helps").doc(id).update({
+                helpers: count + 1
+            }).then(() => {
+                console.log("Helper count updated!");
+            }).catch(err => {
+                console.error("Error updating helpers:", err);
+            });
+        }
+    </script>
+</body>
+</html>
