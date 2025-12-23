@@ -1,0 +1,2 @@
+# HelpNearby
+Online hackathon project
